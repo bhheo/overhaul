@@ -1,6 +1,7 @@
 #ResNet for training CIFAR10 & CIFAR100
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 def conv3(in_planes, out_planes, stride=1):
     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride, 
@@ -77,6 +78,7 @@ class ResNet(nn.Module):
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
+        x = F.relu(x)
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = self.fc(x)

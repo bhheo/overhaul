@@ -18,15 +18,13 @@ from util import test, build_dataset, AverageMeter, accuracy
 sys.path.append("..")
 
 from model.cifar_resnet import *
-from model.cifar_Resnet import *
+# from model.cifar_Resnet import *
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Knowledge distillation on CIFAR10 & CIFAR100')
     parser.add_argument('--dataset', default='cifar100', type=str, choices=['cifar10', 'cifar100'])
-    parser.add_argument('--t_model', default='resnet56', type=str, help='teacher model architecture',
-                        choices=['resnet18', 'resnet34', 'resnet56', 'resnet110'])
-    parser.add_argument('--s_model', default='resnet20', type=str, help='student model architecture',
-                        choices=['resnet18', 'resnet20', 'resnet34', 'resnet56', 'resnet110'])
+    parser.add_argument('--t_model', default='resnet56', type=str, help='teacher model architecture')
+    parser.add_argument('--s_model', default='resnet20', type=str, help='student model architecture')
     parser.add_argument('--lr', default=0.05, type=float, help='learning rate')
     parser.add_argument('--batch_size', type=int, default=128, help='Batch size.')
     parser.add_argument('--momentum', default=0.9, type=float, help='momentum term')
@@ -84,8 +82,7 @@ def main():
     test_accuracies = []
     class_num = 10 if args.dataset == 'cifar10' else 100
 
-    t_net = {'resnet18': resnet18, 'resnet34': resnet34, 
-           'resnet56': resnet56, 'resnet110': resnet110}[args.t_model](class_num)
+    t_net = {'resnet56': resnet56, 'resnet110': resnet110}[args.t_model](class_num)
     t_ckpt_name = 'SGD-CIFAR' + str(class_num) + '-' + args.t_model
     if args.dataset == 'cifar10':
         path = '../ckpt/checkpoint/cifar10/' + t_ckpt_name
@@ -96,15 +93,16 @@ def main():
     t_net = t_net.to(device)
   
     s_ckpt_name = 'SGD-CIFAR' + str(class_num) + '-' + args.s_model + '-student' + '-overhaul2' 
-    s_net = {'resnet18': resnet18, 'resnet20': resnet20, 'resnet34': resnet34, 
+    s_net = {'resnet20': resnet20,
             'resnet56': resnet56, 'resnet110': resnet110}[args.s_model](class_num)
     s_net = s_net.to(device)
-    optimizer = optim.SGD(s_net.parameters(), args.lr, momentum=args.momentum,
-                         weight_decay=args.weight_decay)
     
     criterion = nn.CrossEntropyLoss()
     
     d_net = distillation.Distiller(t_net, s_net)
+
+    optimizer = optim.SGD([{'params': s_net.parameters()}, {'params': d_net.Connectors.parameters()}], args.lr, momentum=args.momentum,
+                         weight_decay=args.weight_decay)
     
     start_epoch = 0
 
